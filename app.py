@@ -68,30 +68,30 @@ def processurl(urltsm):
         'webstat': "Website Available"
     }
 
-    #if vtscan_bool:
-    #    RESULT=vtscan.getResult(config.VTAPIKEY,urltsm)
+    if vtscan_bool:
+        RESULT=vtscan.getResult(config.VTAPIKEY,urltsm)
 
-    #     MALWARESCORE = RESULT['positives']
+        MALWARESCORE = RESULT['positives']
 
-    #    TRIGGERS=[]
-    #    MALHITS=[]
+        TRIGGERS=[]
+        MALHITS=[]
 
-    #    if MALWARESCORE > 0:
-     #       REASON['overall']=REASON['overall']+" * MALWARE HIT"
-      #      REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
-       #     ISWEBSITESAFE= False
+        if MALWARESCORE > 0:
+          REASON['overall']=REASON['overall']+" * MALWARE HIT"
+          REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
+          ISWEBSITESAFE= False
 
-    #    if MALWARESCORE > 0:
-     #       for i in RESULT['scans']:
-      #          if RESULT['scans'][i]['detected'] == True:
-       #             TRIGGERS.append(i)
-        #            MALHITS.append(RESULT['scans'][i]['result'])
-    #else:
-     #   TRIGGERS=[]
-      #  MALHITS=[]
-       # TRIGGERS.append("--")
-        #MALHITS.append("--")
-      #  REASON['malware']="VirusTotal API key not used, skipping malware scan."
+        if MALWARESCORE > 0:
+            for i in RESULT['scans']:
+                if RESULT['scans'][i]['detected'] == True:
+                    TRIGGERS.append(i)
+                    MALHITS.append(RESULT['scans'][i]['result'])
+    else:
+        TRIGGERS=[]
+        MALHITS=[]
+        TRIGGERS.append("--")
+        MALHITS.append("--")
+        REASON['malware']="VirusTotal API key not used, skipping malware scan."
 
 ###### =======================================
 
@@ -234,7 +234,7 @@ def processurl(urltsm):
      #                      HTTPSSCORE=HTTPSSCORE,COVRED=COVRED,REDIR=REDIR,CERT0=CERT0,CERT1 = CERT1,CERT2 = CERT2,CERT3 = CERT3,CERT4 = CERT4,CERT5 = CERT5,CERT6 = CERT6,CERTTRUST=CERTTRUST
       #                    ,ERROR404=ERROR404,REASON=REASON)
     data={"TRANRESULT":TRANRESULT,"WEBUS":WEBUS,"HTTPSSCORE":HTTPSSCORE,"COVERT":COVRED,"REDIR":REDIR,"CERT0":CERT0,"CERT1":CERT1,"CERT2":CERT2,
-           "CERT3":CERT3,"CERT4":CERT4,"CERT5":CERT5,"CERT6":CERT6,"ERROR404":str(ERROR404),"REASON":REASON}
+           "CERT3":CERT3,"CERT4":CERT4,"CERT5":CERT5,"CERT6":CERT6,"ERROR404":str(ERROR404),"REASON":REASON,"MALSR":MALSR,"TRIGGERS":TRIGGERS,"MALHITS":MALHITS,}
     return data
 
 if __name__ == '__main__':
