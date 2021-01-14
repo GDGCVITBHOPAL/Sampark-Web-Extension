@@ -3,7 +3,7 @@ import os
 from socket import socket
 
 import idna
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, jsonify
 # from werkzeug.utils import secure_filename
 
 from backend import vtscan, certcheck, httpscheck,checkReditect,checkTrustedCert
@@ -20,34 +20,36 @@ if config.VTAPIKEY == "YOU_NEED_TO_ENTER_YOUR_API_KEY_HERE_FOR_VIRUSTOTAL_SCAN_T
 else:
     vtscan_bool=True
 
-@app.route('/')
-def hello_world():
+#@app.route('/')
+#def hello_world():
     # sys("rm ./templates/result.html")
+#     return 'test'
+    #return render_template('main.html')
 
-    return render_template('main.html')
 
-
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET','POST'])
 def upload_file():
-    global urlts
-    urlts=""
-    if request.method == 'POST':
+#    global urlts
+#    urlts=""
+#    if request.method == 'POST':
         # check if the post request has the file part
-        if 'urlts' not in request.values:
+#        if 'urlts' not in request.values:
             # flash('No file part')
-            return redirect(request.url)
+#            return redirect(request.url)
 
-        url = request.values['urlts']
-        agent=""
-        if "@shell" in str(url):
-            agent="shell"
-            url=str(url)[:-6]
+        url = request.json['url']
+#        agent=""
+#        if "@shell" in str(url):
+#            agent="shell"
+#            url=str(url)[:-6]
+        if url[len(url)-1]=='/':
+            url=url[0:len(url)-1]
+        print(request.json['url'])
+        data=processurl(url)
+        return jsonify(data)
 
-        print(request.values['urlts'])
-        return processurl(url,agent)
 
-
-def processurl(urltsm,agent):
+def processurl(urltsm):
 
     urltsm=httpscheck.rmrf_protocol(urltsm)
     #ASSUME NOT SAFE AS DEFAULT
@@ -75,9 +77,9 @@ def processurl(urltsm,agent):
         MALHITS=[]
 
         if MALWARESCORE > 0:
-            REASON['overall']=REASON['overall']+" * MALWARE HIT"
-            REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
-            ISWEBSITESAFE= False
+          REASON['overall']=REASON['overall']+" * MALWARE HIT"
+          REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
+          ISWEBSITESAFE= False
 
         if MALWARESCORE > 0:
             for i in RESULT['scans']:
@@ -149,7 +151,7 @@ def processurl(urltsm,agent):
                 REASON['certtrust'] = "The certificate for encryption is provided by trusted Certification Authority."
                 CERTSCORE = "SAFE"
 
-            #
+            
 
         if "SAFE" not in CERTSCORE:
             print("cert hit")
@@ -225,13 +227,15 @@ def processurl(urltsm,agent):
     else:
         COVRED = "NO"
     
-    if agent == "shell":
-        return str(str(TRANRESULT)+";"+(WEBUS)+";"+(MALSR)+";"+str(TRIGGERS)+";"+str(MALHITS)+";"+HTTPSSCORE+";"+COVRED+";"+REDIR+";"+CERT0+";"+CERT1+";"+CERT2+";"+CERT3+";"+CERT4+";"+CERT5+";"+CERT6+";"+CERTTRUST+";"+str(ERROR404)+";"+str(REASON))
+    #if agent == "shell":
+    #   return str(str(TRANRESULT)+";"+(WEBUS)+";"+(MALSR)+";"+str(TRIGGERS)+";"+str(MALHITS)+";"+HTTPSSCORE+";"+COVRED+";"+REDIR+";"+CERT0+";"+CERT1+";"+CERT2+";"+CERT3+";"+CERT4+";"+CERT5+";"+CERT6+";"+CERTTRUST+";"+str(ERROR404)+";"+str(REASON))
 
-    return render_template('res.html',TRANRESULT=TRANRESULT,WEBUS=WEBUS,MALSR=MALSR,TRIGGERS=TRIGGERS,MALHITS=MALHITS,
-                           HTTPSSCORE=HTTPSSCORE,COVRED=COVRED,REDIR=REDIR,CERT0=CERT0,CERT1 = CERT1,CERT2 = CERT2,CERT3 = CERT3,CERT4 = CERT4,CERT5 = CERT5,CERT6 = CERT6,CERTTRUST=CERTTRUST
-                           ,ERROR404=ERROR404,REASON=REASON)
-
+    #return render_template('res.html',TRANRESULT=TRANRESULT,WEBUS=WEBUS,MALSR=MALSR,TRIGGERS=TRIGGERS,MALHITS=MALHITS,
+     #                      HTTPSSCORE=HTTPSSCORE,COVRED=COVRED,REDIR=REDIR,CERT0=CERT0,CERT1 = CERT1,CERT2 = CERT2,CERT3 = CERT3,CERT4 = CERT4,CERT5 = CERT5,CERT6 = CERT6,CERTTRUST=CERTTRUST
+      #                    ,ERROR404=ERROR404,REASON=REASON)
+    data={"TRANRESULT":TRANRESULT,"WEBUS":WEBUS,"HTTPSSCORE":HTTPSSCORE,"COVERT":COVRED,"REDIR":REDIR,"CERT0":CERT0,"CERT1":CERT1,"CERT2":CERT2,
+           "CERT3":CERT3,"CERT4":CERT4,"CERT5":CERT5,"CERT6":CERT6,"ERROR404":str(ERROR404),"REASON":REASON,"MALSR":MALSR,"TRIGGERS":TRIGGERS,"MALHITS":MALHITS,}
+    return data
 
 if __name__ == '__main__':
     # sys("rm ./templates/result.html")
