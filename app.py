@@ -3,7 +3,7 @@ import os
 from socket import socket
 
 import idna
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template,jsonify
 # from werkzeug.utils import secure_filename
 
 from backend import vtscan, certcheck, httpscheck,checkReditect,checkTrustedCert
@@ -14,34 +14,37 @@ app.secret_key = "secret key";
 app.config['MAX_CONTENT_LENGTH'] = 350 * 1024 * 1024;
 
 
-@app.route('/')
-def hello_world():
-    # sys("rm ./templates/result.html")
+#@app.route('/')
+#def hello_world():
+ #   return 'test'
+#    # sys("rm ./templates/result.html")
+#    #dicti=request.json["url"];
+#    return upload_file();
 
-    return render_template('main.html')
 
-
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET','POST'])
 def upload_file():
-    global urlts
-    urlts=""
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'urlts' not in request.values:
+#    global urlts
+#    urlts=""
+#    if request.method == 'POST':
+#        # check if the post request has the file part
+#        if 'urlts' not in request.values:
             # flash('No file part')
-            return redirect(request.url)
+#            return redirect(request.url)
 
-        url = request.values['urlts']
-        agent=""
-        if "@shell" in str(url):
-            agent="shell"
-            url=str(url)[:-6]
+        url = request.json['url']
+#        agent=""
+#        if "@shell" in str(url):
+#            agent="shell"
+#            url=str(url)[:-6]
+        if url[len(url)-1]=='/':
+            url=url[0:len(url)-1]
+        print(request.json['url'])
+        result=processurl(url)
+        return jsonify(result)
 
-        print(request.values['urlts'])
-        return processurl(url,agent)
 
-
-def processurl(urltsm,agent):
+def processurl(urltsm):
 
     urltsm=httpscheck.rmrf_protocol(urltsm)
     #ASSUME NOT SAFE AS DEFAULT
@@ -55,28 +58,26 @@ def processurl(urltsm,agent):
         'certtrust': "The certificate for encryption is not provided by trusted Certification Authority. An attacker can forge a certificate and decrypt the data from HTTPS over SSL, making HTTPS insecure.",
         'malware': "This website is not reported for malicious scripts.",
         'redir': "Redirection is how a website navigates the user to HTTPS even if they try to visit from HTTP on its own.",
-        'covred': "The website does not contain redirection code.",
+        'covert': "The website does not contain redirection code.",
         'overall': "",
         'webstat': "Website Available"
     }
 
-    RESULT=vtscan.getResult(config.VTAPIKEY,urltsm)
+    #RESULT=vtscan.getResult(config.VTAPIKEY,urltsm)
 
-    MALWARESCORE = RESULT['positives']
+    #MALWARESCORE = RESULT['positives']
 
-    TRIGGERS=[]
-    MALHITS=[]
+    #TRIGGERS=[]
+    #if MALWARESCORE > 0:
+    #    REASON['overall']=REASON['overall']+" * MALWARE HIT"
+    #    REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
+    #    ISWEBSITESAFE= False
 
-    if MALWARESCORE > 0:
-        REASON['overall']=REASON['overall']+" * MALWARE HIT"
-        REASON['malware']= "This website is reported to contain malicious scripts or tools, or it is created with malicious intent. BE CAUTIOUS. An adversary can take advantage and steal your data."
-        ISWEBSITESAFE= False
-
-    if MALWARESCORE > 0:
-        for i in RESULT['scans']:
-            if RESULT['scans'][i]['detected'] == True:
-                TRIGGERS.append(i)
-                MALHITS.append(RESULT['scans'][i]['result'])
+    #if MALWARESCORE > 0:
+    #    for i in RESULT['scans']:
+    #        if RESULT['scans'][i]['detected'] == True:
+    #            TRIGGERS.append(i)
+    #            MALHITS.append(RESULT['scans'][i]['result'])
 
 
     print()
@@ -136,9 +137,9 @@ def processurl(urltsm,agent):
             CERT = certcheck.getMainScan(urltsm)
             CERT = CERT.split(';')
             # CHECK TRUSTED CERTS
-            if checkTrustedCert.scan(CERT[4]) == True:
-                REASON['certtrust'] = "The certificate for encryption is provided by trusted Certification Authority."
-                CERTSCORE = "SAFE"
+           # if checkTrustedCert.scan(CERT[4]) == True:
+           #     REASON['certtrust'] = "The certificate for encryption is provided by trusted Certification Authority."
+           #     CERTSCORE = "SAFE"
 
             #
 
@@ -163,12 +164,12 @@ def processurl(urltsm,agent):
 
     WEBUS=urltsm
 
-    if MALWARESCORE > 0:
-        MALSR="UNSAFE"
-        TRIGGERS=str(TRIGGERS)
-        MALHITS=str(MALHITS)
-    else:
-        MALSR = "SAFE"
+    #if MALWARESCORE > 0:
+    #    MALSR="UNSAFE"
+    #    TRIGGERS=str(TRIGGERS)
+    #    MALHITS=str(MALHITS)
+    #else:
+    #    MALSR = "SAFE"
 
     if "NO" not in ISHTTPS:
         HTTPSSCORE="YES"
@@ -191,10 +192,10 @@ def processurl(urltsm,agent):
             CERT5 = "NA"
             CERT6 = "NA"
 
-        if checkTrustedCert.scan(CERT[4]) == True:
-            CERTTRUST="YES"
-        else:
-            CERTTRUST = "NO"
+       # if checkTrustedCert.scan(CERT[4]) == True:
+       #     CERTTRUST="YES"
+       # else:
+        #    CERTTRUST = "NO"
 
     else:
         HTTPSSCORE = "NO"
@@ -213,14 +214,21 @@ def processurl(urltsm,agent):
     else:
         COVRED = "NO"
     
-    if agent == "shell":
-        return str(str(TRANRESULT)+";"+(WEBUS)+";"+(MALSR)+";"+str(TRIGGERS)+";"+str(MALHITS)+";"+HTTPSSCORE+";"+COVRED+";"+REDIR+";"+CERT0+";"+CERT1+";"+CERT2+";"+CERT3+";"+CERT4+";"+CERT5+";"+CERT6+";"+CERTTRUST+";"+str(ERROR404)+";"+str(REASON))
+    #if agent == "shell":
+    #    return str(str(TRANRESULT)+";"+(WEBUS)+";"+(MALSR)+";"+str(TRIGGERS)+";"+str(MALHITS)+";"+HTTPSSCORE+";"+COVRED+";"+REDIR+";"+CERT0+";"+CERT1+";"+CERT2+";"+CERT3+";"+CERT4+";"+CERT5+";"+CERT6+";"+CERTTRUST+";"+str(ERROR404)+";"+str(REASON))
 
-    return render_template('res.html',TRANRESULT=TRANRESULT,WEBUS=WEBUS,MALSR=MALSR,TRIGGERS=TRIGGERS,MALHITS=MALHITS,
-                           HTTPSSCORE=HTTPSSCORE,COVRED=COVRED,REDIR=REDIR,CERT0=CERT0,CERT1 = CERT1,CERT2 = CERT2,CERT3 = CERT3,CERT4 = CERT4,CERT5 = CERT5,CERT6 = CERT6,CERTTRUST=CERTTRUST
-                           ,ERROR404=ERROR404,REASON=REASON)
-
+    #return render_template('res.html',TRANRESULT=TRANRESULT,WEBUS=WEBUS,MALSR=MALSR,TRIGGERS=TRIGGERS,MALHITS=MALHITS,
+     #                      HTTPSSCORE=HTTPSSCORE,COVRED=COVRED,REDIR=REDIR,CERT0=CERT0,CERT1 = CERT1,CERT2 = CERT2,CERT3 = CERT3,CERT4 = CERT4,CERT5 = CERT5,CERT6 = CERT6,CERTTRUST=CERTTRUST
+      #                     ,ERROR404=ERROR404,REASON=REASON)
+    dicti={"TRANRESULT":TRANRESULT,"WEBUS":WEBUS,"HTTPSSCORE":HTTPSSCORE,"COVERT":COVRED,"REDIR":REDIR,"CERT0":CERT0,"CERT1":CERT1,"CERT2":CERT2,
+           "CERT3":CERT3,"CERT4":CERT4,"CERT5":CERT5,"CERT6":CERT6,"ERROR404":str(ERROR404),"REASON":REASON}
+           #"REASON":REASON}
+    return dicti
 
 if __name__ == '__main__':
     # sys("rm ./templates/result.html")
     app.run()
+
+
+## the checkTrustedCert is showing file cannot read error
+## The vtscan module not used as needed config
