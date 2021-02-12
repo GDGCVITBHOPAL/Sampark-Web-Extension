@@ -1,0 +1,11 @@
+{
+  "manifest_version": 2,
+
+  "name": "SAMPARK",
+  "description": "SAMPARK",
+  "version": "1.0.0",
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab"]
+}
